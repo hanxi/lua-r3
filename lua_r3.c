@@ -4,70 +4,10 @@
 #include <lua.h>
 #include <lauxlib.h>
 #include "r3/include/r3.h"
-#include "r3/include/r3_gvc.h"
-
-size_t
-r3_match_entry_fetch_slugs(void *entry, size_t idx, char *val,
-                                size_t *val_len)
-{
-    match_entry             *m_entry = entry;
-    int                      i;
-
-    if (val ==  NULL) {
-        return m_entry->vars.slugs.size;
-    }
-
-    if (idx >= m_entry->vars.slugs.size) {
-        return -1;
-    }
-
-    i = m_entry->vars.slugs.entries[idx].len;
-    *val_len = i;
-
-    sprintf(val, "%*.*s", i, i, m_entry->vars.slugs.entries[idx].base);
-    return m_entry->vars.slugs.size;
-}
-
-
-size_t
-r3_match_entry_fetch_tokens(void *entry, size_t idx, char *val,
-                                 size_t *val_len)
-{
-    match_entry             *m_entry = entry;
-    int                      i_len;
-
-    if (val ==  NULL) {
-        return m_entry->vars.tokens.size;
-    }
-
-    if (idx >= m_entry->vars.tokens.size) {
-        return -1;
-    }
-
-    i_len = m_entry->vars.tokens.entries[idx].len;
-    *val_len = i_len;
-
-    sprintf(val, "%*.*s", i_len, i_len, m_entry->vars.tokens.entries[idx].base);
-    return m_entry->vars.tokens.size;
-}
-
-
-void
-r3_match_entry_free(void *entry)
-{
-    match_entry    *r3_entry = (match_entry *)entry;
-
-    if (entry == NULL) {
-        return;
-    }
-
-    match_entry_free(r3_entry);
-    return;
-}
 
 static int
 lr3_create(lua_State *L) {
-    int cap = luaL_checkinteger(L,1);
+    int cap = luaL_checkinteger(L, 1);
     R3Node *tree = r3_tree_create(cap);
     lua_pushlightuserdata(L, tree);
     return 1;
@@ -75,7 +15,7 @@ lr3_create(lua_State *L) {
 
 static int
 lr3_free(lua_State *L) {
-    R3Node *tree = (R3Node *)lua_touserdata(L,1);
+    R3Node *tree = (R3Node *)lua_touserdata(L, 1);
     if (tree == NULL) {
         return 0;
     }
@@ -85,7 +25,7 @@ lr3_free(lua_State *L) {
 
 static int
 lr3_insert(lua_State *L) {
-    R3Node *tree = (R3Node *)lua_touserdata(L,1);
+    R3Node *tree = (R3Node *)lua_touserdata(L, 1);
     if (tree == NULL) {
         return luaL_error(L, "tree is null.");
     }
@@ -111,7 +51,7 @@ lr3_insert(lua_State *L) {
 
 static int
 lr3_compile(lua_State *L) {
-    R3Node *tree = (R3Node *)lua_touserdata(L,1);
+    R3Node *tree = (R3Node *)lua_touserdata(L, 1);
     if (tree == NULL) {
         return luaL_error(L, "tree is null.");
     }
@@ -124,18 +64,24 @@ lr3_compile(lua_State *L) {
         free(errstr);
         return 2;
     }
+
     lua_pushboolean(L, true);
-
-    r3_tree_dump(tree, 0);
-
-    r3_tree_render_file(tree, "png", "check_gvc.png");
-
     return 1;
 }
 
 static int
+lr3_dump(lua_State *L) {
+    R3Node *tree = (R3Node *)lua_touserdata(L, 1);
+    if (tree == NULL) {
+        return luaL_error(L, "tree is null.");
+    }
+    r3_tree_dump(tree, 0);
+    return 0;
+}
+
+static int
 lr3_match_route(lua_State *L) {
-    R3Node *tree = (R3Node *)lua_touserdata(L,1);
+    R3Node *tree = (R3Node *)lua_touserdata(L, 1);
     if (tree == NULL) {
         return luaL_error(L, "tree is null.");
     }
@@ -156,24 +102,39 @@ lr3_match_route(lua_State *L) {
     int idx = (int)( (intptr_t) matched_route->data );
     lua_pushinteger(L, idx);
 
+    int i;
+    size_t size = entry->vars.slugs.size;
+    lua_createtable(L, size, 0);
+    for (i = 0; i < size; i++) {
+        lua_pushlstring(L, entry->vars.slugs.entries[i].base, entry->vars.slugs.entries[i].len);
+        lua_rawseti(L, -2, i+1);
+    }
+
+    size = entry->vars.tokens.size;
+    lua_createtable(L, size, 0);
+    for (i = 0; i < size; i++) {
+        lua_pushlstring(L, entry->vars.tokens.entries[i].base, entry->vars.tokens.entries[i].len);
+        lua_rawseti(L, -2, i+1);
+    }
+
     match_entry_free(entry);
-    return 1;
+    return 3;
 }
 
 LUAMOD_API int
 luaopen_r3_core(lua_State *L) {
     luaL_checkversion(L);
     luaL_Reg l[] = {
-        { "r3_create", lr3_create },
-        { "r3_free", lr3_free },
-        { "r3_insert", lr3_insert },
-        { "r3_compile", lr3_compile },
-        { "r3_match_route", lr3_match_route },
+        { "create", lr3_create },
+        { "free", lr3_free },
+        { "insert", lr3_insert },
+        { "compile", lr3_compile },
+        { "dump", lr3_dump },
+        { "match_route", lr3_match_route },
         { NULL,  NULL },
     };
 
-    luaL_newlib(L,l);
-
+    luaL_newlib(L, l);
     return 1;
 }
 
