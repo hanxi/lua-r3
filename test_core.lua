@@ -46,3 +46,4 @@ test_match("/3/n/f/k1/k2", 3)
 r3_core.free(tree)
 
 print("test core ok")
+
