@@ -50,3 +50,6 @@ See [test.lua](https://github.com/hanxi/lua-r3/blob/main/test.lua)
 - [iresty/lua-resty-libr3](https://github.com/iresty/lua-resty-libr3)
 - [c9s/r3](https://github.com/c9s/r3)
 
+### More
+
+- blog: http://blog.hanxi.info/49
