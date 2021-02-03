@@ -2,10 +2,6 @@
 
 [libr3](https://github.com/c9s/r3) for lua.
 
-### TODO
-
-- `r3.lua` for route
-
 ### Build
 
 #### Dependent library
@@ -25,28 +21,29 @@ Just run `make` commond. Will generate `r3.so` file for lua dynamic lib.
 
 ### How to use
 
-```lua
-local r3_core = require "r3.core"
+Use `r3.lua` and `r3.so` in your `lua_path` and `lua_cpath` .
 
--- create tree
-local tree = r3_core.create(10)
+```lua
+local r3 = require "r3"
+
+-- create route
+local route = r3:new()
 
 -- insert route
-local METHOD_GET = 2
-local node = r3_core.insert(tree, METHOD_GET, "/foo/{bar}", 1)
+route:insert("GET", "/foo/{bar}", "t1")
 
--- compile tree
-local ok,msg = r3_core.compile(tree)
--- dump tree for debug
-r3_core.dump(tree)
+-- compile route
+route:compile()
+
+-- dump route tree
+route:dump()
 
 -- match route
-local idx, slugs, tokens = r3_core.match_route(tree, "/foo/foobar", METHOD_GET)
+local data, params = route:match("/foo/foobar", "GET")
 
-r3_core.free(tree)
 ```
 
-See [test_core.lua](https://github.com/hanxi/lua-r3/blob/main/test_core.lua)
+See [test.lua](https://github.com/hanxi/lua-r3/blob/main/test.lua)
 
 ### Thanks
 
