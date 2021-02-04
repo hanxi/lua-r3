@@ -1,7 +1,7 @@
 UNAME ?= $(shell uname)
-R3_CONFIGURE_OPT ?= --enable-graphviz
+R3_CONFIGURE_OPT ?=
 
-CFLAGS := -O3 -g -Wall -fpic -I/usr/include/graphviz
+CFLAGS := -O3 -g -Wall -fpic
 
 C_SO_NAME := r3.so
 LDFLAGS := -shared
@@ -38,7 +38,7 @@ ${OBJS} : %.o : %.c
 	$(CC) $(CFLAGS) -c $<
 
 ${C_SO_NAME} : ${OBJS}
-	$(CC) $(LDFLAGS) $(OBJS) $(R3_FOLDER)/.libs/libr3.a -o $@ -lpcre -lgvc -lcgraph -lcdt  
+	$(CC) $(LDFLAGS) $(OBJS) $(R3_FOLDER)/.libs/libr3.a -o $@ -lpcre  
 
 ${R3_FOLDER} :
 	git clone -b 2.0.3-iresty https://github.com/iresty/r3.git
