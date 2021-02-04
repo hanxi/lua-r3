@@ -1,12 +1,11 @@
 UNAME ?= $(shell uname)
 R3_CONFIGURE_OPT ?=
+LUA_INCLUDE_DIR ?= /usr/local/include
 
-CFLAGS := -O3 -g -Wall -fpic
+CFLAGS := -O3 -g -Wall -fpic -I$(LUA_INCLUDE_DIR)
 
 C_SO_NAME := r3.so
 LDFLAGS := -shared
-
-BUILDER_IMAGE = lua-resty-libr3-builder
 
 # on Mac OS X, one should set instead:
 # for Mac OS X environment, use one of options

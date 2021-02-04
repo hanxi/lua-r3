@@ -5,27 +5,66 @@
 #include <lauxlib.h>
 #include "r3/include/r3.h"
 
+typedef struct _snode {
+    char *s;
+    struct _snode *next;
+} snode;
+
+static snode *
+snode_create(const char *s, size_t len) {
+    snode *node = (snode *)malloc(sizeof(snode));
+    node->s = (char *)malloc(len + 1);
+    strcpy(node->s, s);
+    node->next = NULL;
+    return node;
+}
+
+static void
+snode_insert(snode **p_slink, snode *node) {
+    node->next = *p_slink;
+    *p_slink = node;
+}
+
+typedef struct _r3_tree {
+    R3Node *r3node;
+    snode *slink;
+} r3_tree;
+
 static int
 lr3_create(lua_State *L) {
     int cap = luaL_checkinteger(L, 1);
-    R3Node *tree = r3_tree_create(cap);
-    lua_pushlightuserdata(L, tree);
+    r3_tree *tree = (r3_tree *)lua_newuserdata(L, sizeof(r3_tree));
+    tree->r3node = r3_tree_create(cap);
+    tree->slink = NULL;
     return 1;
 }
 
 static int
 lr3_free(lua_State *L) {
-    R3Node *tree = (R3Node *)lua_touserdata(L, 1);
+    r3_tree *tree = (r3_tree *)lua_touserdata(L, 1);
     if (tree == NULL) {
         return 0;
     }
-    r3_tree_free(tree);
+
+    snode *head = tree->slink;
+    while (head != NULL) {
+        free(head->s);
+        snode *tmp = head->next;
+        free(head);
+        head = tmp;
+    }
+    tree->slink = NULL;
+
+    if (tree->r3node != NULL) {
+        r3_tree_free(tree->r3node);
+    }
+    tree->r3node = NULL;
     return 0;
 }
 
 static int
 lr3_insert(lua_State *L) {
-    R3Node *tree = (R3Node *)lua_touserdata(L, 1);
+    r3_tree *tree = (r3_tree *)lua_touserdata(L, 1);
     if (tree == NULL) {
         return luaL_error(L, "tree is null.");
     }
@@ -37,7 +76,9 @@ lr3_insert(lua_State *L) {
     void *data = (void *)(intptr_t)(idx);
     char *errstr = NULL;
 
-    R3Route *route = r3_tree_insert_routel_ex(tree, method, path, path_len, data, &errstr);
+    snode *n = snode_create(path, path_len);
+    snode_insert(&tree->slink, n);
+    R3Route *route = r3_tree_insert_routel_ex(tree->r3node, method, n->s, path_len, data, &errstr);
     if (route == NULL) {
         lua_pushnil(L);
         lua_pushstring(L, errstr);
@@ -51,13 +92,13 @@ lr3_insert(lua_State *L) {
 
 static int
 lr3_compile(lua_State *L) {
-    R3Node *tree = (R3Node *)lua_touserdata(L, 1);
+    r3_tree *tree = (r3_tree *)lua_touserdata(L, 1);
     if (tree == NULL) {
         return luaL_error(L, "tree is null.");
     }
 
     char *errstr = NULL;
-    int err = r3_tree_compile(tree, &errstr);
+    int err = r3_tree_compile(tree->r3node, &errstr);
     if (err != 0) {
         lua_pushnil(L);
         lua_pushstring(L, errstr);
@@ -71,17 +112,17 @@ lr3_compile(lua_State *L) {
 
 static int
 lr3_dump(lua_State *L) {
-    R3Node *tree = (R3Node *)lua_touserdata(L, 1);
+    r3_tree *tree = (r3_tree *)lua_touserdata(L, 1);
     if (tree == NULL) {
         return luaL_error(L, "tree is null.");
     }
-    r3_tree_dump(tree, 0);
+    r3_tree_dump(tree->r3node, 0);
     return 0;
 }
 
 static int
 lr3_match_route(lua_State *L) {
-    R3Node *tree = (R3Node *)lua_touserdata(L, 1);
+    r3_tree *tree = (r3_tree *)lua_touserdata(L, 1);
     if (tree == NULL) {
         return luaL_error(L, "tree is null.");
     }
@@ -92,7 +133,7 @@ lr3_match_route(lua_State *L) {
     match_entry *entry = match_entry_create(path);
     entry->request_method = method;
 
-    R3Route *matched_route = r3_tree_match_route(tree, entry);
+    R3Route *matched_route = r3_tree_match_route(tree->r3node, entry);
     if (matched_route == NULL) {
         match_entry_free(entry);
         lua_pushnil(L);
