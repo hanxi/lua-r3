@@ -52,4 +52,4 @@ See [test.lua](https://github.com/hanxi/lua-r3/blob/main/test.lua)
 
 ### More
 
-- blog: http://blog.hanxi.info/49
+- blog: https://blog.hanxi.cc/p/49
